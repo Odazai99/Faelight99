@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同人作品网站</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>同人作品网站</h1>
+            <nav>
+                <ul>
+                    <li><a href="#home">首页</a></li>
+                    <li><a href="#add-article" id="add-article-btn">添加文章</a></li>
+                    <li><a href="#login" id="login-btn">登录</a></li>
+                    <li><a href="#register" id="register-btn">注册</a></li>
+                    <li><a href="#logout" id="logout-btn" style="display: none;">退出</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="home" class="container">
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="搜索文章...">
+                <button id="search-btn">搜索</button>
+            </div>
+            <div id="articles-container"></div>
+        </section>
+
+        <section id="add-article" class="container" style="display: none;">
+            <h2>添加文章</h2>
+            <form id="article-form">
+                <div class="form-group">
+                    <label for="title">标题</label>
+                    <input type="text" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="tags">标签 (用逗号分隔)</label>
+                    <input type="text" id="tags" placeholder="例如: 同人, 小说, 动漫">
+                </div>
+                <div class="form-group">
+                    <label for="content">内容</label>
+                    <div id="editor"></div>
+                </div>
+                <button type="submit">发布文章</button>
+            </form>
+        </section>
+
+        <section id="article-detail" class="container" style="display: none;">
+            <div id="article-content"></div>
+            <div class="comments-section">
+                <h3>评论</h3>
+                <div id="comments-container"></div>
+                <form id="comment-form">
+                    <div class="form-group">
+                        <label for="comment-author">姓名</label>
+                        <input type="text" id="comment-author" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="comment-content">评论</label>
+                        <textarea id="comment-content" required></textarea>
+                    </div>
+                    <button type="submit">提交评论</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="login" class="container" style="display: none;">
+            <h2>登录</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit">登录</button>
+            </form>
+        </section>
+
+        <section id="register" class="container" style="display: none;">
+            <h2>注册</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="register-username">用户名</label>
+                    <input type="text" id="register-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-nickname">昵称</label>
+                    <input type="text" id="register-nickname" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">密码</label>
+                    <input type="password" id="register-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-confirm-password">确认密码</label>
+                    <input type="password" id="register-confirm-password" required>
+                </div>
+                <button type="submit">注册</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 同人作品网站</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
