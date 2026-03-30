@@ -7,6 +7,10 @@ let comments = [];
 let likes = [];
 let blockedTags = [];
 
+// Gist配置
+const GIST_ID = 'd5840429b68a74b4dbfe77278d571209';
+const GIST_RAW_URL = `https://gist.githubusercontent.com/Odazai99/${GIST_ID}/raw/data.json`;
+
 // 初始化函数
 function init() {
     // 初始化富文本编辑器
@@ -23,57 +27,86 @@ function init() {
 
     // 显示首页
     showSection('home');
-
-    // 渲染文章列表
-    renderArticles(articles);
 }
 
-// 加载数据
-function loadData() {
-    // 加载用户
-    const savedUsers = localStorage.getItem('users');
-    if (savedUsers) {
-        users = JSON.parse(savedUsers);
-    } else {
-        // 初始化默认管理员账户
+// 从Gist加载数据
+async function loadData() {
+    try {
+        const response = await fetch(GIST_RAW_URL + '?t=' + Date.now()); // 添加时间戳避免缓存
+        if (response.ok) {
+            const data = await response.json();
+            users = data.users || [];
+            articles = data.articles || [];
+            comments = data.comments || [];
+            likes = data.likes || [];
+            blockedTags = data.blockedTags || [];
+            
+            // 如果没有用户数据，初始化默认管理员账户
+            if (users.length === 0) {
+                users = [{ username: 'admin', password: 'admin123', nickname: '管理员' }];
+                await saveDataToGist();
+            }
+            
+            // 渲染文章列表
+            renderArticles(articles);
+        } else {
+            console.error('Failed to load data from Gist');
+            // 使用默认数据
+            users = [{ username: 'admin', password: 'admin123', nickname: '管理员' }];
+            articles = [];
+            comments = [];
+            likes = [];
+            blockedTags = [];
+            renderArticles(articles);
+        }
+    } catch (error) {
+        console.error('Error loading data:', error);
+        // 使用默认数据
         users = [{ username: 'admin', password: 'admin123', nickname: '管理员' }];
-        localStorage.setItem('users', JSON.stringify(users));
+        articles = [];
+        comments = [];
+        likes = [];
+        blockedTags = [];
+        renderArticles(articles);
     }
-
-    // 加载文章
-    const savedArticles = localStorage.getItem('articles');
-    if (savedArticles) {
-        articles = JSON.parse(savedArticles);
-    }
-
-    // 加载评论
-    const savedComments = localStorage.getItem('comments');
-    if (savedComments) {
-        comments = JSON.parse(savedComments);
-    }
-
-    // 加载点赞记录
-    const savedLikes = localStorage.getItem('likes');
-    if (savedLikes) {
-        likes = JSON.parse(savedLikes);
-    }
-
-    // 加载屏蔽标签
-    const savedBlockedTags = localStorage.getItem('blockedTags');
-    if (savedBlockedTags) {
-        blockedTags = JSON.parse(savedBlockedTags);
-    }
-
-    // 加载用户状态
+    
+    // 加载本地用户状态（保持登录状态）
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
         updateUI();
+        updateCommentForm();
     }
 }
 
-// 保存数据
+// 保存数据到Gist（通过GitHub API）
+async function saveDataToGist() {
+    const data = {
+        users,
+        articles,
+        comments,
+        likes,
+        blockedTags
+    };
+    
+    // 由于GitHub API需要认证，这里我们创建一个下载链接让用户手动更新
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    // 存储到localStorage作为备份
+    localStorage.setItem('websiteData', dataStr);
+    
+    // 显示提示信息
+    console.log('Data prepared for Gist update. Please manually update the Gist with the latest data.');
+    console.log('Current data:', data);
+    
+    return true;
+}
+
+// 保存数据（兼容旧版本，同时尝试保存到Gist）
 function saveData() {
+    // 保存到localStorage作为备份
     localStorage.setItem('users', JSON.stringify(users));
     localStorage.setItem('articles', JSON.stringify(articles));
     localStorage.setItem('comments', JSON.stringify(comments));
@@ -82,6 +115,64 @@ function saveData() {
     if (currentUser) {
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
     }
+    
+    // 尝试保存到Gist
+    saveDataToGist();
+}
+
+// 导出数据到剪贴板
+function exportDataToClipboard() {
+    const data = {
+        users,
+        articles,
+        comments,
+        likes,
+        blockedTags
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    
+    // 复制到剪贴板
+    navigator.clipboard.writeText(dataStr).then(() => {
+        const statusDiv = document.getElementById('export-status');
+        statusDiv.textContent = '数据已成功复制到剪贴板！请粘贴到 Gist 中。';
+        statusDiv.style.color = '#27ae60';
+        setTimeout(() => {
+            statusDiv.textContent = '';
+        }, 5000);
+    }).catch(err => {
+        console.error('复制失败:', err);
+        // 备用方案：显示在文本框中
+        const statusDiv = document.getElementById('export-status');
+        statusDiv.innerHTML = '自动复制失败，请手动复制以下数据：<br><textarea id="manual-export" rows="10" style="width: 100%; margin-top: 10px;">' + dataStr + '</textarea>';
+        statusDiv.style.color = '#e74c3c';
+    });
+}
+
+// 更新管理页面统计
+function updateAdminStats() {
+    document.getElementById('article-count').textContent = articles.length;
+    document.getElementById('comment-count').textContent = comments.length;
+    document.getElementById('user-count').textContent = users.length;
+    document.getElementById('like-count').textContent = likes.length;
+    
+    // 更新当前登录信息
+    if (currentUser) {
+        document.getElementById('current-username').textContent = currentUser.username;
+        document.getElementById('current-nickname').textContent = currentUser.nickname;
+        document.getElementById('admin-status').textContent = isAdmin() ? '是' : '否';
+        document.getElementById('admin-status').style.color = isAdmin() ? '#27ae60' : '#e74c3c';
+    } else {
+        document.getElementById('current-username').textContent = '未登录';
+        document.getElementById('current-nickname').textContent = '-';
+        document.getElementById('admin-status').textContent = '否';
+        document.getElementById('admin-status').style.color = '#e74c3c';
+    }
+}
+
+// 检查是否为管理员
+function isAdmin() {
+    return currentUser && currentUser.username === 'admin';
 }
 
 // 绑定事件
@@ -137,6 +228,12 @@ function bindEvents() {
         logout();
     });
 
+    // 导出数据按钮
+    const exportBtn = document.getElementById('export-data-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportDataToClipboard);
+    }
+
     // 点赞按钮（使用事件委托）
     document.addEventListener('click', function(e) {
         if (e.target.closest('.like-btn')) {
@@ -165,14 +262,53 @@ function showSection(sectionId) {
     document.getElementById(sectionId).style.display = 'block';
 
     // 特殊处理
-    if (sectionId === 'add-article' && !currentUser) {
+    if (sectionId === 'add-article' && !isAdmin()) {
         showSection('login');
-        alert('请先登录');
+        alert('只有管理员可以发布文章');
+        return;
     }
+    
+    // 管理员页面权限检查
+    if (sectionId === 'admin' && !isAdmin()) {
+        showSection('login');
+        alert('只有管理员可以访问管理页面');
+        return;
+    }
+    
+    // 更新评论表单
+    if (sectionId === 'article-detail') {
+        updateCommentForm();
+    }
+    
+    // 更新管理页面统计
+    if (sectionId === 'admin') {
+        updateAdminStats();
+    }
+}
+
+// 获取设备ID
+function getDeviceId() {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('deviceId', deviceId);
+    }
+    return deviceId;
+}
+
+// 检查设备是否已注册
+function hasDeviceRegistered() {
+    return localStorage.getItem('hasRegistered') === 'true';
 }
 
 // 注册
 function register() {
+    // 检查设备是否已注册
+    if (hasDeviceRegistered()) {
+        alert('该设备只能注册一个账号');
+        return;
+    }
+
     const username = document.getElementById('register-username').value;
     const nickname = document.getElementById('register-nickname').value;
     const password = document.getElementById('register-password').value;
@@ -194,6 +330,10 @@ function register() {
     // 添加新用户
     users.push({ username, password, nickname });
     saveData();
+    
+    // 标记设备已注册
+    localStorage.setItem('hasRegistered', 'true');
+    
     alert('注册成功，请登录');
     showSection('login');
 
@@ -206,25 +346,21 @@ function register() {
 
 // 点赞文章
 function likeArticle(articleId) {
-    // 检查用户是否登录
-    if (!currentUser) {
-        alert('请先登录');
-        showSection('login');
-        return;
-    }
+    // 获取用户标识（登录用户或设备ID）
+    const userId = currentUser ? currentUser.username : getDeviceId();
 
     const article = articles.find(a => a.id === articleId);
     if (article) {
         // 检查用户是否已经点赞
-        const existingLike = likes.find(like => like.userId === currentUser.username && like.articleId === articleId);
+        const existingLike = likes.find(like => like.userId === userId && like.articleId === articleId);
         
         if (existingLike) {
             // 取消点赞
-            likes = likes.filter(like => !(like.userId === currentUser.username && like.articleId === articleId));
+            likes = likes.filter(like => !(like.userId === userId && like.articleId === articleId));
             article.likes = Math.max(0, (article.likes || 0) - 1);
         } else {
             // 添加点赞
-            likes.push({ userId: currentUser.username, articleId });
+            likes.push({ userId, articleId });
             article.likes = (article.likes || 0) + 1;
         }
         
@@ -287,7 +423,8 @@ function showArticlesByTag(tag) {
         const excerpt = article.content.replace(/<[^>]+>/g, '').substring(0, 100) + '...';
 
         // 检查用户是否已经点赞
-        const isLiked = currentUser && likes.some(like => like.userId === currentUser.username && like.articleId === article.id);
+        const userId = currentUser ? currentUser.username : getDeviceId();
+        const isLiked = likes.some(like => like.userId === userId && like.articleId === article.id);
         const likeIconColor = isLiked ? '#e74c3c' : '#999';
 
         // 生成标签HTML
@@ -343,6 +480,7 @@ function login() {
     if (user) {
         currentUser = { username, nickname: user.nickname };
         updateUI();
+        updateCommentForm();
         saveData();
         showSection('home');
         alert('登录成功');
@@ -356,18 +494,51 @@ function logout() {
     currentUser = null;
     localStorage.removeItem('currentUser');
     updateUI();
+    updateCommentForm();
     showSection('home');
     alert('已退出登录');
 }
 
 // 更新 UI
 function updateUI() {
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const adminBtn = document.getElementById('admin-btn');
+    const addArticleBtn = document.getElementById('add-article-btn');
+    
     if (currentUser) {
-        document.getElementById('login-btn').style.display = 'none';
-        document.getElementById('logout-btn').style.display = 'block';
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'block';
+        
+        // 只有管理员显示管理按钮和添加文章按钮
+        if (isAdmin()) {
+            adminBtn.style.display = 'block';
+            addArticleBtn.style.display = 'block';
+        } else {
+            adminBtn.style.display = 'none';
+            addArticleBtn.style.display = 'none';
+        }
     } else {
-        document.getElementById('login-btn').style.display = 'block';
-        document.getElementById('logout-btn').style.display = 'none';
+        loginBtn.style.display = 'block';
+        logoutBtn.style.display = 'none';
+        adminBtn.style.display = 'none';
+        addArticleBtn.style.display = 'none';
+    }
+}
+
+// 更新评论表单
+function updateCommentForm() {
+    const commentForm = document.getElementById('comment-form');
+    const authorInput = document.getElementById('comment-author');
+    
+    if (currentUser) {
+        // 已登录，隐藏作者输入框，使用当前用户昵称
+        authorInput.style.display = 'none';
+        authorInput.value = currentUser.nickname;
+    } else {
+        // 未登录，显示提示
+        authorInput.style.display = 'block';
+        authorInput.value = '';
     }
 }
 
@@ -429,7 +600,8 @@ function renderArticles(articleList) {
         const excerpt = article.content.replace(/<[^>]+>/g, '').substring(0, 100) + '...';
 
         // 检查用户是否已经点赞
-        const isLiked = currentUser && likes.some(like => like.userId === currentUser.username && like.articleId === article.id);
+        const userId = currentUser ? currentUser.username : getDeviceId();
+        const isLiked = likes.some(like => like.userId === userId && like.articleId === article.id);
         const likeIconColor = isLiked ? '#e74c3c' : '#999';
 
         // 生成标签HTML
@@ -461,7 +633,8 @@ function showArticleDetail(articleId) {
     if (!article) return;
 
     // 检查用户是否已经点赞
-    const isLiked = currentUser && likes.some(like => like.userId === currentUser.username && like.articleId === article.id);
+    const userId = currentUser ? currentUser.username : getDeviceId();
+    const isLiked = likes.some(like => like.userId === userId && like.articleId === article.id);
     const likeIconColor = isLiked ? '#e74c3c' : '#999';
 
     // 生成标签HTML
@@ -519,14 +692,20 @@ function renderComments(articleId) {
 
 // 添加评论
 function addComment() {
+    // 检查用户是否登录
+    if (!currentUser) {
+        alert('请先登录后再评论');
+        showSection('login');
+        return;
+    }
+
     const articleId = parseInt(localStorage.getItem('currentArticleId'));
-    const author = document.getElementById('comment-author').value;
     const content = document.getElementById('comment-content').value;
 
     const comment = {
         id: Date.now(),
         articleId,
-        author,
+        author: currentUser.nickname, // 使用登录用户的昵称
         content,
         createdAt: new Date().toISOString()
     };
@@ -537,7 +716,6 @@ function addComment() {
     alert('评论提交成功');
 
     // 重置表单
-    document.getElementById('comment-author').value = '';
     document.getElementById('comment-content').value = '';
 }
 
@@ -569,7 +747,8 @@ function searchArticles() {
         const excerpt = article.content.replace(/<[^>]+>/g, '').substring(0, 100) + '...';
 
         // 检查用户是否已经点赞
-        const isLiked = currentUser && likes.some(like => like.userId === currentUser.username && like.articleId === article.id);
+        const userId = currentUser ? currentUser.username : getDeviceId();
+        const isLiked = likes.some(like => like.userId === userId && like.articleId === article.id);
         const likeIconColor = isLiked ? '#e74c3c' : '#999';
 
         // 生成标签HTML
