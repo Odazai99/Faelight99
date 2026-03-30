@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>同人作品网站</title>
+    <title>挪德卡莱小叶莺不会梦见蓝色乌鸦同事</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
@@ -11,14 +11,15 @@
 <body>
     <header>
         <div class="container">
-            <h1>同人作品网站</h1>
+            <h1>挪德卡莱小叶莺不会梦见蓝色乌鸦同事</h1>
             <nav>
                 <ul>
                     <li><a href="#home">首页</a></li>
-                    <li><a href="#add-article" id="add-article-btn">添加文章</a></li>
+                    <li><a href="#add-article" id="add-article-btn" style="display: none;">添加文章</a></li>
                     <li><a href="#login" id="login-btn">登录</a></li>
                     <li><a href="#register" id="register-btn">注册</a></li>
                     <li><a href="#logout" id="logout-btn" style="display: none;">退出</a></li>
+                    <li><a href="#admin" id="admin-btn" style="display: none;">管理</a></li>
                 </ul>
             </nav>
         </div>
@@ -108,11 +109,49 @@
                 <button type="submit">注册</button>
             </form>
         </section>
+
+        <section id="admin" class="container" style="display: none;">
+            <h2>管理后台</h2>
+            <div class="admin-section">
+                <h3>导出数据到 Gist</h3>
+                <p>点击下面的按钮复制当前网站数据，然后粘贴到你的 Gist 中。</p>
+                <button id="export-data-btn" class="admin-btn">复制数据到剪贴板</button>
+                <div id="export-status" class="status-message"></div>
+            </div>
+            <div class="admin-section">
+                <h3>当前登录信息</h3>
+                <div id="current-user-info">
+                    <p>用户名: <span id="current-username">未登录</span></p>
+                    <p>昵称: <span id="current-nickname">-</span></p>
+                    <p>管理员状态: <span id="admin-status">否</span></p>
+                </div>
+            </div>
+            <div class="admin-section">
+                <h3>当前数据统计</h3>
+                <ul id="admin-stats">
+                    <li>文章数量: <span id="article-count">0</span></li>
+                    <li>评论数量: <span id="comment-count">0</span></li>
+                    <li>用户数量: <span id="user-count">0</span></li>
+                    <li>点赞数量: <span id="like-count">0</span></li>
+                </ul>
+            </div>
+            <div class="admin-section">
+                <h3>使用说明</h3>
+                <ol>
+                    <li>点击"复制数据到剪贴板"按钮</li>
+                    <li>访问你的 Gist: <a href="https://gist.github.com/Odazai99/d5840429b68a74b4dbfe77278d571209" target="_blank">https://gist.github.com/Odazai99/d5840429b68a74b4dbfe77278d571209</a></li>
+                    <li>点击 Edit 编辑 data.json 文件</li>
+                    <li>粘贴复制的数据</li>
+                    <li>点击 Update gist 保存</li>
+                    <li>等待 2-5 分钟后，其他设备即可看到更新</li>
+                </ol>
+            </div>
+        </section>
     </main>
 
     <footer>
         <div class="container">
-            <p>&copy; 2026 同人作品网站</p>
+            <p>&copy; 2026 挪德卡莱小叶莺不会梦见蓝色乌鸦同事</p>
         </div>
     </footer>
 
